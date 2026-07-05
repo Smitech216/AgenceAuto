@@ -30,11 +30,9 @@
    ▸ Sans ça, l'auth et la base de données ne fonctionnent PAS
 ═══════════════════════════════════════════════════════════════════════ */
 
-const SUPABASE_URL  = "COLLE_TON_URL_ICI";
-// Exemple : "https://abcdefghijklm.supabase.co"
+const SUPABASE_URL  = "https://tqhcsfejebjlqwnxllsr.supabase.co";
 
-const SUPABASE_ANON = "COLLE_TA_CLE_ICI";
-// Exemple : "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.XXXXXX..."
+const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxaGNzZmVqZWJqbHF3bnhsbHNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMyNDQ4MjAsImV4cCI6MjA5ODgyMDgyMH0.4C3dUf0B7upW3nbctmMF0b16bvqvR0dVhJe2U9rjRoQ";
 
 /*
   ── Comment obtenir ces valeurs ? ──────────────────────────────────────
@@ -54,8 +52,8 @@ let supabase = null;
 
 try {
   if (
-    SUPABASE_URL  !== "https://tqhcsfejebjlqwnxllsr.supabase.co" &&
-    SUPABASE_ANON !== "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxaGNzZmVqZWJqbHF3bnhsbHNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMyNDQ4MjAsImV4cCI6MjA5ODgyMDgyMH0.4C3dUf0B7upW3nbctmMF0b16bvqvR0dVhJe2U9rjRoQ"
+    SUPABASE_URL  !== "COLLE_TON_URL_ICI" &&
+    SUPABASE_ANON !== "COLLE_TA_CLE_ICI"
   ) {
     // ✅ Clés configurées → connexion réelle à la base de données
     supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
@@ -1654,13 +1652,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   Récapitulatif des TODO pour connecter les vraies fonctionnalités :
   ─────────────────────────────────────────────────────────────────
-  [ ] Remplir SUPABASE_URL et SUPABASE_ANON (section 1)
-  [ ] Créer les tables SQL dans Supabase (voir guide fourni)
   [ ] Remplir STRIPE_PUBLIC_KEY et STRIPE_PRICES (section 2)
   [ ] Créer les produits dans Stripe (29€, 79€, 199€)
   [ ] Créer les Edge Functions Supabase :
       - create-checkout-session (pour le paiement Stripe)
       - stripe-portal (pour gérer l'abonnement)
+      - stripe-webhook (pour synchroniser les paiements)
   [ ] Activer Google OAuth dans Supabase (optionnel)
   [ ] Connecter un service d'envoi d'email (Resend, SendGrid)
       pour sendQuote() et les relances automatiques
