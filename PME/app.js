@@ -54,8 +54,8 @@ let supabase = null;
 
 try {
   if (
-    SUPABASE_URL  !== "COLLE_TON_URL_ICI" &&
-    SUPABASE_ANON !== "COLLE_TA_CLE_ICI"
+    SUPABASE_URL  !== "https://tqhcsfejebjlqwnxllsr.supabase.co" &&
+    SUPABASE_ANON !== "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxaGNzZmVqZWJqbHF3bnhsbHNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMyNDQ4MjAsImV4cCI6MjA5ODgyMDgyMH0.4C3dUf0B7upW3nbctmMF0b16bvqvR0dVhJe2U9rjRoQ"
   ) {
     // ✅ Clés configurées → connexion réelle à la base de données
     supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
