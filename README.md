@@ -41,54 +41,6 @@ agenceauto/
         └── stripe-webhook/             # Synchronise les paiements → Supabase
 ```
 
----
-
-## 🚀 Démarrage rapide (mode démo, sans configuration)
-
-```bash
-git clone https://github.com/TON_PSEUDO/agenceauto.git
-cd agenceauto
-```
-
-Ouvre simplement `index.html` dans ton navigateur. Le site tourne en mode démo avec des données d'exemple — aucune clé API requise.
-
----
-
-## ⚙️ Configuration (mode production)
-
-Pour activer les vrais comptes utilisateurs et les vrais paiements, voir le guide complet : **[GUIDE_DEPLOIEMENT.md](./GUIDE_DEPLOIEMENT.md)**
-
-Résumé des étapes :
-
-1. **Supabase** — créer le projet, exécuter le SQL, récupérer les clés API
-2. **Stripe** — créer les 3 produits d'abonnement, récupérer les clés
-3. Renseigner les clés dans `app.js` (en haut du fichier)
-4. **Déployer les Edge Functions** Supabase (`create-checkout-session`, `stripe-portal`, `stripe-webhook`)
-5. **Brancher le webhook** Stripe → Supabase
-6. **Déployer** sur Vercel via GitHub
-
-### Variables à renseigner dans `app.js`
-
-```js
-const SUPABASE_URL  = "https://xxxxx.supabase.co";
-const SUPABASE_ANON = "eyJ...";
-
-const STRIPE_PUBLIC_KEY = "pk_test_...";
-const STRIPE_PRICES = {
-  solo:   "price_...",
-  agence: "price_...",
-  studio: "price_...",
-};
-```
-
-### Secrets à définir côté Supabase (jamais dans le code)
-
-```bash
-supabase secrets set STRIPE_SECRET_KEY=sk_test_...
-supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_...
-```
-
----
 
 ## 🗄️ Modèle de données
 
