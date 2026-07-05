@@ -181,6 +181,9 @@ function showPage(pageName) {
   window.scrollTo(0, 0);
 }
 
+// 🚀 LA LIGNE À AJOUTER : Rend la fonction visible pour tes boutons HTML
+window.showPage = showPage;
+
 
 /* ═══════════════════════════════════════════════════════════════════════
    5. AUTHENTIFICATION
