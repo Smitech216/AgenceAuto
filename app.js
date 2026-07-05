@@ -23,49 +23,39 @@
 */
 
 
-/* ═══════════════════════════════════════════════════════════════════════
-   1. CONFIGURATION SUPABASE
-   ▸ Va sur supabase.com → ton projet → Settings → API
-   ▸ Copie "Project URL" et "anon public key" ici
-   ▸ Sans ça, l'auth et la base de données ne fonctionnent PAS
-═══════════════════════════════════════════════════════════════════════ */
-
-const SUPABASE_URL  = "https://tqhcsfejebjlqwnxllsr.supabase.co";
-
-const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxaGNzZmVqZWJqbHF3bnhsbHNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMyNDQ4MjAsImV4cCI6MjA5ODgyMDgyMH0.4C3dUf0B7upW3nbctmMF0b16bvqvR0dVhJe2U9rjRoQ";
-
 /*
-  ── Comment obtenir ces valeurs ? ──────────────────────────────────────
-  1. Va sur supabase.com et connecte-toi
-  2. Clique sur ton projet "agenceauto"
-  3. Dans le menu de gauche : clique sur l'icône ⚙️ "Project Settings"
-  4. Clique sur "API"
-  5. Copie :
-     - "Project URL" → colle dans SUPABASE_URL ci-dessus
-     - "anon public" (la clé qui commence par eyJ...) → colle dans SUPABASE_ANON
-  ───────────────────────────────────────────────────────────────────────
+╔══════════════════════════════════════════════════════════════════════════╗
+║                        AGENCEAUTO — app.js                              ║
+╚══════════════════════════════════════════════════════════════════════════╝
 */
 
-// Initialisation du client Supabase
-// (le SDK est chargé depuis le CDN dans index.html)
-let supabase = null;
+// ── 1. CONFIGURATION SUPABASE ─────────────────────────────────────────────
+// Remplace ces valeurs par tes vraies clés Supabase si ce n'est pas déjà fait !
+const SUPABASE_URL  = "https://tqhcsfejebjlqwnxllsr.supabase.co"; 
+const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxaGNzZmVqZWJqbHF3bnhsbHNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMyNDQ4MjAsImV4cCI6MjA5ODgyMDgyMH0.4C3dUf0B7upW3nbctmMF0b16bvqvR0dVhJe2U9rjRoQ";
+
+// 💡 ASTUCE : On sauvegarde le module du CDN pour éviter le crash de doublon
+const supabaseLib = window.supabase;
+
+// On utilise 'var' pour écraser proprement l'initialisation sans erreur de syntaxe
+var supabase = null; 
 
 try {
   if (
-    SUPABASE_URL  !== "COLLE_TON_URL_ICI" &&
-    SUPABASE_ANON !== "COLLE_TA_CLE_ICI"
+    SUPABASE_URL  !== "https://tqhcsfejebjlqwnxllsr.supabase.co" &&
+    SUPABASE_ANON !== "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxaGNzZmVqZWJqbHF3bnhsbHNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMyNDQ4MjAsImV4cCI6MjA5ODgyMDgyMH0.4C3dUf0B7upW3nbctmMF0b16bvqvR0dVhJe2U9rjRoQ"
   ) {
-    // ✅ Clés configurées → connexion réelle à la base de données
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
-    console.log("✅ Supabase connecté");
+    // ✅ Connexion active à ta vraie base de données
+    supabase = supabaseLib.createClient(SUPABASE_URL, SUPABASE_ANON);
+    console.log("✅ Supabase connecté avec succès !");
   } else {
-    // ⚠️ Clés non configurées → mode démo (données simulées)
-    console.warn("⚠️ Supabase non configuré. L'app tourne en mode démo.");
-    console.warn("   Pour activer la vraie BDD : remplis SUPABASE_URL et SUPABASE_ANON dans app.js");
+    // ⚠️ Mode démo si les clés ne sont pas encore détectées comme changées
+    console.warn("⚠️ Supabase tourne en mode démo.");
   }
 } catch (e) {
-  console.error("Erreur Supabase :", e.message);
+  console.error("Erreur lors de l'initialisation de Supabase :", e.message);
 }
+
 
 
 /* ═══════════════════════════════════════════════════════════════════════
