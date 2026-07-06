@@ -2,12 +2,12 @@
 ╔══════════════════════════════════════════════════════════════════════════╗
 ║                        AGENCEAUTO — app.js                              ║
 ║                                                                          ║
-║  Ce fichier contient TOUTE la logique JavaScript de l'application.      ║
+║  Ce fichier contient TOUTE la logique JavaScript de l'application.       ║
 ║                                                                          ║
 ║  Organisation :                                                          ║
 ║    1.  CONFIGURATION SUPABASE  ← à remplir avec tes vraies clés         ║
 ║    2.  CONFIGURATION STRIPE    ← à remplir avec tes vraies clés         ║
-║    3.  ÉTAT DE L'APPLICATION   (données en mémoire)                     ║
+║    3.  ÉTAT DE L'APPLICATION   (données en mémoire)                      ║
 ║    4.  NAVIGATION              (entre les pages)                         ║
 ║    5.  AUTHENTIFICATION        (inscription, connexion, déconnexion)     ║
 ║    6.  DONNÉES CLIENTS         (charger, afficher, créer)                ║
@@ -19,13 +19,6 @@
 ║   12.  TOAST                   (notifications)                           ║
 ║   13.  UTILITAIRES             (formatage, FAQ, sidebar, etc.)           ║
 ║   14.  INITIALISATION          (au chargement de la page)                ║
-╚══════════════════════════════════════════════════════════════════════════╝
-*/
-
-
-/*
-╔══════════════════════════════════════════════════════════════════════════╗
-║                        AGENCEAUTO — app.js                              ║
 ╚══════════════════════════════════════════════════════════════════════════╝
 */
 
@@ -47,7 +40,6 @@ try {
 } catch (e) {
   console.error("Erreur lors de l'initialisation de Supabase :", e.message);
 }
-
 
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -128,7 +120,6 @@ let appData = {
   ],
 };
 
-
 /* ═══════════════════════════════════════════════════════════════════════
    4. NAVIGATION — Changer de page
    showPage() masque toutes les pages et affiche seulement celle demandée
@@ -175,7 +166,6 @@ function showPage(pageName) {
 
 // 🚀 LA LIGNE À AJOUTER : Rend la fonction visible pour tes boutons HTML
 window.showPage = showPage;
-
 
 /* ═══════════════════════════════════════════════════════════════════════
    5. AUTHENTIFICATION
@@ -225,7 +215,6 @@ async function handleLogin() {
 
   // ── Validation côté client ────────────────────────────────────────
   hideError("login-error");
-
   if (!email || !password) {
     showError("login-error", "Email et mot de passe requis.");
     return;
@@ -242,14 +231,14 @@ async function handleLogin() {
   try {
     if (!supabase) {
       // ── Mode démo ──────────────────────────────────────────────
-      await sleep(900); // Simule le délai réseau
+      await sleep(900);
+      // Simule le délai réseau
       simulateLogin(email.split("@")[0], email, "agence");
       return;
     }
 
     // ── Vraie connexion Supabase ──────────────────────────────────
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-
     if (error) {
       // Traduit les messages d'erreur Supabase en français
       const msg = translateAuthError(error.message);
@@ -259,7 +248,6 @@ async function handleLogin() {
 
     // Connexion réussie → récupère le profil complet
     const profile = await fetchProfile(data.user.id);
-
     currentUser = {
       id:    data.user.id,
       name:  profile?.name  || email.split("@")[0],
@@ -269,7 +257,6 @@ async function handleLogin() {
 
     showToast("Connexion réussie !", "success");
     showPage("dashboard");
-
   } catch (err) {
     showError("login-error", "Une erreur inattendue s'est produite.");
     console.error(err);
@@ -291,7 +278,6 @@ async function handleRegister() {
 
   // ── Validation ────────────────────────────────────────────────────
   hideError("reg-error");
-
   if (!name) {
     showError("reg-error", "Votre prénom est requis.");
     return;
@@ -311,24 +297,21 @@ async function handleRegister() {
 
   const btn = document.getElementById("reg-btn");
   setButtonLoading(btn, true, "Création du compte…");
-
+  
   try {
     if (!supabase) {
       // ── Mode démo ──────────────────────────────────────────────
       await sleep(1000);
       simulateLogin(name, email, plan);
-      return;
+      return; // S'arrête ici si on est en démo
     }
 
     // ── Vraie inscription Supabase ────────────────────────────────
-    // Crée le compte dans auth.users
-    // Le trigger SQL crée automatiquement le profil dans public.profiles
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
-          // Ces données sont transmises au trigger SQL
           name: name,
           plan: plan,
         }
@@ -341,17 +324,15 @@ async function handleRegister() {
     }
 
     if (data.user) {
-      // Met à jour le profil avec le plan choisi (sécurité en cas de délai du trigger)
-      if (supabase) {
-        await supabase
-          .from("profiles")
-          .upsert({ id: data.user.id, email, name, plan })
-          .eq("id", data.user.id);
-      }
+      // Met à jour le profil avec le plan choisi
+      await supabase
+        .from("profiles")
+        .upsert({ id: data.user.id, email, name, plan });
 
       currentUser = { id: data.user.id, name, email, plan };
       showToast("Compte créé ! Bienvenue 🎉", "success");
       showPage("dashboard");
+      return; 
     }
 
   } catch (err) {
@@ -384,12 +365,12 @@ async function handleLogout() {
  */
 async function fetchProfile(userId) {
   if (!supabase) return null;
-
   const { data, error } = await supabase
     .from("profiles")    // ← Table créée par le SQL dans Supabase
     .select("*")
     .eq("id", userId)    // ← Filtre par l'ID utilisateur
-    .single();           // ← On attend un seul résultat
+    .single();
+  // ← On attend un seul résultat
 
   if (error) {
     console.error("Erreur fetchProfile :", error.message);
@@ -426,11 +407,11 @@ function translateAuthError(msg) {
  * Si oui, le redirige directement vers le dashboard.
  */
 async function checkExistingSession() {
-  if (!supabase) return; // Mode démo : pas de session persistante
+  if (!supabase) return;
+  // Mode démo : pas de session persistante
 
   try {
     const { data: { session } } = await supabase.auth.getSession();
-
     if (session?.user) {
       // Session active trouvée → récupère le profil et va au dashboard
       const profile = await fetchProfile(session.user.id);
@@ -460,9 +441,11 @@ async function loadClients() {
   if (supabase && currentUser?.id !== "demo-user") {
     const { data, error } = await supabase
       .from("clients")                                    // ← Table clients dans Supabase
-      .select("*")                                        // ← Récupère toutes les colonnes
+      .select("*")                         
+      // ← Récupère toutes les colonnes
       .eq("user_id", currentUser.id)                     // ← Seulement les clients de cet utilisateur
-      .order("created_at", { ascending: false });         // ← Les plus récents en premier
+      .order("created_at", { ascending: false });
+    // ← Les plus récents en premier
 
     if (error) {
       console.error("Erreur loadClients :", error.message);
@@ -509,6 +492,7 @@ function renderClients() {
                display:flex;align-items:center;justify-content:center;
                font-size:12px;font-weight:800;color:var(--accent);
                font-family:var(--font-display);flex-shrink:0">
+            
             ${c.name.slice(0, 2).toUpperCase()}
           </div>
           <strong>${escapeHtml(c.name)}</strong>
@@ -532,7 +516,6 @@ async function submitNewClient() {
   const contact = document.getElementById("nc-contact").value.trim();
   const email   = document.getElementById("nc-email").value.trim();
   const plan    = document.getElementById("nc-plan").value;
-
   if (!name || !email) {
     showToast("Nom et email requis.", "error");
     return;
@@ -557,12 +540,10 @@ async function submitNewClient() {
         }])
         .select()   // ← Récupère la ligne insérée avec son UUID généré
         .single();
-
       if (error) throw error;
 
       // Ajoute en tête de liste sans recharger tout
       appData.clients.unshift(data);
-
     } else {
       // ── Mode démo : ajoute en mémoire ─────────────────────────
       const newClient = {
@@ -603,7 +584,6 @@ async function loadQuotes() {
       .select("*")
       .eq("user_id", currentUser.id)
       .order("created_at", { ascending: false });
-
     if (error) {
       console.error("Erreur loadQuotes :", error.message);
     } else {
@@ -619,7 +599,6 @@ async function loadQuotes() {
 function renderQuotes() {
   const tbody = document.getElementById("quotes-tbody");
   if (!tbody) return;
-
   // Compteur
   const countEl = document.getElementById("quotes-count");
   if (countEl) {
@@ -657,7 +636,7 @@ function renderQuotes() {
               class="btn-accent-sm"
               style="background:rgba(14,207,164,.15);color:var(--mint)"
               onclick="markQuoteSigned('${q.id || q.reference}')">
-              Marquer signé
+               Marquer signé
             </button>
           ` : ""}
         </div>
@@ -690,7 +669,6 @@ async function markQuoteSigned(quoteId) {
           signed_at: new Date().toISOString(),
         })
         .eq("id", quoteId);
-
       if (error) throw error;
     }
 
@@ -700,7 +678,6 @@ async function markQuoteSigned(quoteId) {
 
     renderQuotes();
     showToast(`Devis ${quoteId} marqué comme signé ✓`, "success");
-
   } catch (err) {
     showToast("Erreur : " + err.message, "error");
   }
@@ -715,7 +692,6 @@ async function submitNewQuote() {
   const title  = document.getElementById("nq-title").value.trim();
   const amount = parseFloat(document.getElementById("nq-amount").value);
   const notes  = document.getElementById("nq-notes").value.trim();
-
   if (!client || isNaN(amount) || amount <= 0) {
     showToast("Client et montant requis.", "error");
     return;
@@ -747,7 +723,6 @@ async function submitNewQuote() {
         }])
         .select()
         .single();
-
       if (error) throw error;
       appData.quotes.unshift(data);
 
@@ -765,7 +740,6 @@ async function submitNewQuote() {
     renderQuotes();
     closeModal();
     showToast(`Devis ${ref} créé avec succès !`, "success");
-
   } catch (err) {
     showToast("Erreur : " + err.message, "error");
     console.error(err);
@@ -789,7 +763,6 @@ async function loadInvoices() {
       .select("*")
       .eq("user_id", currentUser.id)
       .order("created_at", { ascending: false });
-
     if (error) {
       console.error("Erreur loadInvoices :", error.message);
     } else {
@@ -805,14 +778,13 @@ async function loadInvoices() {
 function renderInvoices() {
   const tbody = document.getElementById("invoices-tbody");
   if (!tbody) return;
-
   // Calcule les totaux par statut
   const paid    = appData.invoices.filter(f => f.status === "Payée").reduce((s, f) => s + Number(f.amount), 0);
   const pending = appData.invoices.filter(f => f.status === "En attente").reduce((s, f) => s + Number(f.amount), 0);
   const late    = appData.invoices.filter(f => f.status === "En retard").reduce((s, f) => s + Number(f.amount), 0);
-
   // Met à jour les résumés
-  const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  const setEl = (id, val) => { const el = document.getElementById(id);
+  if (el) el.textContent = val; };
   setEl("inv-paid",    formatEur(paid));
   setEl("inv-pending", formatEur(pending));
   setEl("inv-late",    formatEur(late));
@@ -863,7 +835,6 @@ async function markInvoicePaid(invoiceId) {
           paid_at: new Date().toISOString(),
         })
         .eq("id", invoiceId);
-
       if (error) throw error;
     }
 
@@ -894,7 +865,6 @@ async function loadAllData() {
     loadQuotes(),
     loadInvoices(),
   ]);
-
   // Met à jour les stats de la page d'accueil
   updateDashboardStats();
 }
@@ -912,7 +882,6 @@ function updateDashboardStats() {
       return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
     })
     .reduce((sum, inv) => sum + Number(inv.amount), 0);
-
   // Taux de signature (devis signés / devis envoyés)
   const sent   = appData.quotes.filter(q => ["Signé", "Refusé", "En attente"].includes(q.status)).length;
   const signed = appData.quotes.filter(q => q.status === "Signé").length;
@@ -920,10 +889,11 @@ function updateDashboardStats() {
 
   // Clients actifs
   const activeClients = appData.clients.filter(c => c.status === "Actif").length;
-
   // Met à jour le DOM
-  const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-  setEl("stat-revenue", formatEur(monthRevenue) || "14 820 €"); // Fallback démo
+  const setEl = (id, val) => { const el = document.getElementById(id);
+  if (el) el.textContent = val; };
+  setEl("stat-revenue", formatEur(monthRevenue) || "14 820 €");
+  // Fallback démo
   setEl("stat-quotes",  appData.quotes.length   || "28");
   setEl("stat-clients", activeClients           || "47");
   setEl("stat-sign",    `${rate}%`              || "91%");
@@ -939,10 +909,10 @@ function updateDashboardStats() {
  */
 function loadSettingsForm() {
   if (!currentUser) return;
-  const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ""; };
+  const setVal = (id, val) => { const el = document.getElementById(id);
+  if (el) el.value = val || ""; };
   setVal("set-name",  currentUser.name);
   setVal("set-email", currentUser.email);
-
   // Affiche le plan actuel
   const planNames = { solo: "Plan Solo", agence: "Plan Agence", studio: "Plan Studio" };
   const planMetas = { solo: "29€/mois", agence: "79€/mois", studio: "199€/mois" };
@@ -959,7 +929,6 @@ async function saveProfile() {
   const name    = document.getElementById("set-name")?.value.trim();
   const company = document.getElementById("set-company")?.value.trim();
   const website = document.getElementById("set-website")?.value.trim();
-
   if (!name) { showToast("Le nom est requis.", "error"); return; }
 
   try {
@@ -969,7 +938,6 @@ async function saveProfile() {
         .from("profiles")
         .update({ name, company_name: company, website })
         .eq("id", currentUser.id);
-
       if (error) throw error;
     }
 
@@ -977,7 +945,6 @@ async function saveProfile() {
     currentUser.name = name;
     fillUserInfo();  // Rafraîchit la sidebar
     showToast("Profil sauvegardé !", "success");
-
   } catch (err) {
     showToast("Erreur : " + err.message, "error");
   }
@@ -990,7 +957,7 @@ async function saveProfile() {
  * ── Comment configurer le portail Stripe ──────────────────────────────
  * 1. Dans Stripe → Settings → Billing → Customer Portal → Activer
  * 2. Créer une Supabase Edge Function "stripe-portal" qui appelle
- *    stripe.billingPortal.sessions.create()
+ * stripe.billingPortal.sessions.create()
  * 3. Remplacer l'URL ci-dessous par l'URL de ta fonction
  * ────────────────────────────────────────────────────────────────────
  */
@@ -1002,13 +969,11 @@ async function openStripePortal() {
 
   try {
     showToast("Redirection vers le portail d'abonnement…", "success");
-
     // Appelle la Edge Function Supabase qui crée une session portail Stripe
     const { data, error } = await supabase.functions.invoke("stripe-portal", {
       body: { userId: currentUser.id }
       // ← Cette Edge Function est à créer dans Supabase → Edge Functions
     });
-
     if (error) throw error;
     if (data?.url) window.location.href = data.url;
 
@@ -1034,7 +999,6 @@ async function handleSubscribe(plan) {
 
   try {
     showToast("Redirection vers le paiement…", "success");
-
     // ── Stripe Checkout ───────────────────────────────────────────
     // Nécessite une Edge Function Supabase "create-checkout-session"
     // Cette fonction crée une session Stripe et retourne un sessionId
@@ -1044,16 +1008,15 @@ async function handleSubscribe(plan) {
         userId:    currentUser?.id,
         userEmail: currentUser?.email,
         // ← URLs de retour après paiement
-        successUrl: `${window.location.origin}?payment=success`,
+       
+         successUrl: `${window.location.origin}?payment=success`,
         cancelUrl:  `${window.location.origin}?payment=cancel`,
       }
     });
-
     if (error) throw error;
 
     // Redirige vers la page de paiement Stripe
     await stripe.redirectToCheckout({ sessionId: data.sessionId });
-
   } catch (err) {
     showToast("Erreur paiement : " + err.message, "error");
     showPage("register");
@@ -1085,7 +1048,6 @@ function openModal(type) {
   const bodyEl    = document.getElementById("modal-body");
 
   if (!overlay || !titleEl || !bodyEl) return;
-
   // Contenu selon le type
   const contents = {
 
@@ -1098,6 +1060,7 @@ function openModal(type) {
             <label class="form-label">Client</label>
             <input id="nq-client" class="form-input" placeholder="Nom de l'entreprise"/>
           </div>
+ 
           <div class="form-group">
             <label class="form-label">Titre / Objet</label>
             <input id="nq-title" class="form-input" placeholder="Refonte site web, Mission SEO…"/>
@@ -1105,6 +1068,7 @@ function openModal(type) {
           <div class="form-group">
             <label class="form-label">Montant HT (€)</label>
             <input id="nq-amount" type="number" min="0" step="0.01" class="form-input" placeholder="1500"/>
+  
           </div>
           <div class="form-group">
             <label class="form-label">Notes</label>
@@ -1112,6 +1076,7 @@ function openModal(type) {
           </div>
           <div class="modal-footer">
             <button class="btn-ghost" onclick="closeModal()">Annuler</button>
+            
             <button id="modal-submit-btn" class="btn-primary" onclick="submitNewQuote()">Créer le devis</button>
           </div>
         </div>`
@@ -1124,6 +1089,7 @@ function openModal(type) {
         <div style="display:flex;flex-direction:column;gap:14px">
           <div class="form-group">
             <label class="form-label">Entreprise</label>
+        
             <input id="nc-name" class="form-input" placeholder="Atelier Créatif"/>
           </div>
           <div class="form-group">
@@ -1132,13 +1098,15 @@ function openModal(type) {
           </div>
           <div class="form-group">
             <label class="form-label">Email</label>
-            <input id="nc-email" type="email" class="form-input" placeholder="marie@atelier.fr"/>
+       
+             <input id="nc-email" type="email" class="form-input" placeholder="marie@atelier.fr"/>
           </div>
           <div class="form-group">
             <label class="form-label">Plan de facturation</label>
             <select id="nc-plan" class="form-input">
               <option value="Mensuel">Mensuel</option>
               <option value="Annuel">Annuel</option>
+           
               <option value="Ponctuel">Ponctuel</option>
             </select>
           </div>
@@ -1149,7 +1117,7 @@ function openModal(type) {
         </div>`
     },
 
-    // ── MODAL : Nouvelle facture ───────────────────────────────────
+    // ── MODAL : Nouvelle facture 
     invoice: {
       title: "Nouvelle facture",
       html: `
@@ -1159,6 +1127,7 @@ function openModal(type) {
             <select id="ni-client" class="form-input">
               ${appData.clients.map(c => `<option value="${escapeHtml(c.name)}">${escapeHtml(c.name)}</option>`).join("")}
             </select>
+    
           </div>
           <div class="form-group">
             <label class="form-label">Montant HT (€)</label>
@@ -1175,7 +1144,6 @@ function openModal(type) {
         </div>`
     },
   };
-
   const content = contents[type];
   if (!content) return;
 
@@ -1200,7 +1168,6 @@ async function submitNewInvoice() {
   const client = document.getElementById("ni-client")?.value;
   const amount = parseFloat(document.getElementById("ni-amount")?.value);
   const due    = document.getElementById("ni-due")?.value;
-
   if (!client || isNaN(amount) || amount <= 0) {
     showToast("Client et montant requis.", "error");
     return;
@@ -1210,7 +1177,6 @@ async function submitNewInvoice() {
   setButtonLoading(btn, true, "Création…");
 
   const ref = `FAC-${String(appData.invoices.length + 1).padStart(3, "0")}`;
-
   try {
     if (supabase && currentUser?.id !== "demo-user") {
       const { data, error } = await supabase
@@ -1220,12 +1186,11 @@ async function submitNewInvoice() {
           client_name: client,
           reference:   ref,
           amount,
-          status:      "En attente",
+          status: "En attente",
           due_date:    due || null,
         }])
         .select()
         .single();
-
       if (error) throw error;
       appData.invoices.unshift(data);
 
@@ -1238,13 +1203,13 @@ async function submitNewInvoice() {
         due_date:    due,
         paid_at:     null,
         created_at:  new Date().toISOString(),
+ 
       });
     }
 
     renderInvoices();
     closeModal();
     showToast(`Facture ${ref} créée !`, "success");
-
   } catch (err) {
     showToast("Erreur : " + err.message, "error");
   } finally {
@@ -1258,7 +1223,6 @@ async function submitNewInvoice() {
 ═══════════════════════════════════════════════════════════════════════ */
 
 let toastTimer = null;
-
 /**
  * Affiche une notification en bas à droite.
  * @param {string} message - Le texte à afficher
@@ -1270,7 +1234,6 @@ function showToast(message, type = "success") {
   const msgEl  = document.getElementById("toast-msg");
 
   if (!toast) return;
-
   // Contenu
   if (icon)  icon.textContent  = type === "error" ? "✕" : "✓";
   if (msgEl) msgEl.textContent = message;
@@ -1308,7 +1271,6 @@ function switchTab(clickedBtn) {
   const tabId = clickedBtn.getAttribute("data-tab");
   const panel = document.getElementById(tabId);
   if (panel) panel.classList.remove("hidden");
-
   // Met à jour le titre dans la topbar
   const titleEl = document.getElementById("topbar-title");
   if (titleEl) {
@@ -1341,11 +1303,9 @@ function fillUserInfo() {
     .join("")
     .slice(0, 2)
     .toUpperCase();
-
   // Salutation sur la page d'accueil
   const greeting = document.getElementById("dash-greeting");
   if (greeting) greeting.textContent = `Bonjour, ${currentUser.name.split(" ")[0]} 👋`;
-
   // Sidebar
   const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
   setEl("sidebar-avatar", initials);
@@ -1390,7 +1350,6 @@ function initFaq() {
     // Retire les anciens écouteurs pour éviter les doublons
     btn.replaceWith(btn.cloneNode(true));
   });
-
   document.querySelectorAll(".faq-question").forEach(btn => {
     btn.addEventListener("click", () => {
       const item = btn.closest(".faq-item");
@@ -1412,7 +1371,6 @@ function initFaq() {
  */
 function animateCounters() {
   const counters = document.querySelectorAll("[data-target]");
-
   counters.forEach(el => {
     const target  = parseInt(el.getAttribute("data-target"));
     const prefix  = el.getAttribute("data-prefix") || "";
@@ -1433,6 +1391,7 @@ function animateCounters() {
       if (prefix === "€ ") {
         el.textContent = new Intl.NumberFormat("fr-FR").format(value) + " €";
       } else {
+    
         el.textContent = prefix + value + suffix;
       }
 
@@ -1484,6 +1443,7 @@ function statusBadge(status) {
     "Prospect":    { cls: "badge-muted",  label: "Prospect" },
     "Signé":       { cls: "badge-mint",   label: "Signé" },
     "En attente":  { cls: "badge-amber",  label: "En attente" },
+   
     "Refusé":      { cls: "badge-red",    label: "Refusé" },
     "Brouillon":   { cls: "badge-muted",  label: "Brouillon" },
     "Payée":       { cls: "badge-mint",   label: "Payée" },
@@ -1592,6 +1552,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // ── 4. Écoute les changements de session Supabase ────────────────
   // Gère les cas : token expiré, déconnexion depuis un autre onglet, etc.
   if (supabase) {
+ 
     supabase.auth.onAuthStateChange((event, session) => {
       console.log("Auth event :", event);
 
