@@ -57,7 +57,7 @@ try {
    ▸ Les Price ID se trouvent dans Stripe → Produits → ton produit → Prix
 ═══════════════════════════════════════════════════════════════════════ */
 
-const STRIPE_PUBLIC_KEY = "COLLE_TA_CLE_STRIPE_ICI";
+const STRIPE_PUBLIC_KEY = "pk_test_51Tol4C9AI6nFEqZd1nS0xi5dtb9Q5px1BviBoaXE5FoHkCYIWtqkKJBoh34Dgi2HSyM4gvexfO5O9yYtrRGg5cGY00vZDvW1B0";
 // Exemple : "pk_test_51XXXXXXXXXXXXXXXXXXXXXX"
 // ⚠️ Utilise pk_test_ pour les tests, pk_live_ pour la vraie production
 
