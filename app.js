@@ -34,22 +34,14 @@
 const SUPABASE_URL  = "https://tqhcsfejebjlqwnxllsr.supabase.co"; 
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxaGNzZmVqZWJqbHF3bnhsbHNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMyNDQ4MjAsImV4cCI6MjA5ODgyMDgyMH0.4C3dUf0B7upW3nbctmMF0b16bvqvR0dVhJe2U9rjRoQ";
 
-// 💡 ASTUCE : On sauvegarde le module du CDN pour éviter le crash de doublon
 const supabaseLib = window.supabase;
-
-// On utilise 'var' pour écraser proprement l'initialisation sans erreur de syntaxe
-var supabase = null; 
+var supabase = null;
 
 try {
-  if (
-    SUPABASE_URL  !== "https://tqhcsfejebjlqwnxllsr.supabase.co" &&
-    SUPABASE_ANON !== "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxaGNzZmVqZWJqbHF3bnhsbHNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMyNDQ4MjAsImV4cCI6MjA5ODgyMDgyMH0.4C3dUf0B7upW3nbctmMF0b16bvqvR0dVhJe2U9rjRoQ"
-  ) {
-    // ✅ Connexion active à ta vraie base de données
+  if (SUPABASE_URL && SUPABASE_ANON) {
     supabase = supabaseLib.createClient(SUPABASE_URL, SUPABASE_ANON);
     console.log("✅ Supabase connecté avec succès !");
   } else {
-    // ⚠️ Mode démo si les clés ne sont pas encore détectées comme changées
     console.warn("⚠️ Supabase tourne en mode démo.");
   }
 } catch (e) {
