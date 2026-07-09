@@ -1140,9 +1140,47 @@ function renderRevenueChart() {
 }
 
 /**
+ * Remplace les rapports "Juin/Mai/Avril 2025" codés en dur dans le HTML
+ * par un vrai état honnête pour les comptes réels.
+ *
+ * ⚠️ Note honnête : il n'y a pas encore de vraie génération automatique de
+ * rapports côté serveur (pas de table "reports", pas de cron/Edge Function
+ * pour ça). Donc pour un compte réel, on ne peut pas afficher de "vrais"
+ * rapports passés — on affiche un état vide au lieu d'inventer des chiffres.
+ * Si tu veux cette fonctionnalité un jour, il faudra une table `reports` +
+ * une Edge Function planifiée (cron) qui génère un PDF le 1er du mois.
+ */
+function renderReports() {
+  const list = document.querySelector(".reports-list");
+  const nextCard = document.querySelector(".next-report-card");
+  if (!list) return;
+
+  // Mode démo pur (Supabase non configuré) : on garde les exemples du HTML
+  if (!supabase || currentUser?.id === "demo-user") return;
+
+  list.innerHTML = `
+    <div class="card" style="text-align:center;padding:3rem 1.5rem;color:var(--muted);font-size:14px;line-height:1.6">
+      Aucun rapport généré pour l'instant.<br/>
+      Cette fonctionnalité arrive bientôt : le premier rapport sera créé automatiquement
+      le 1er du mois, dès que tu auras des clients actifs.
+    </div>`;
+
+  if (nextCard) {
+    const activeClients = appData.clients.filter(c => c.status === "Actif").length;
+    const meta = nextCard.querySelector("p:not(.outfit)");
+    if (meta) {
+      meta.textContent = activeClients > 0
+        ? `Sera généré automatiquement dès que la fonctionnalité sera activée — ${activeClients} client${activeClients > 1 ? "s" : ""} actif${activeClients > 1 ? "s" : ""} concerné${activeClients > 1 ? "s" : ""}.`
+        : `Ajoute des clients actifs pour que cette fonctionnalité te soit utile.`;
+    }
+  }
+}
+
+/**
  * Affiche une petite carte "Bienvenue, voici comment démarrer" tant que le
  * compte est tout neuf (0 client ET 0 devis). Disparaît dès que la personne
- * a commencé à utiliser l'app pour de vrai.
+ * a commencé à utiliser l'app pour de vrai. Propose aussi de lancer le
+ * tuto interactif guidé (voir startTutorial()).
  */
 function renderOnboardingCard() {
   document.getElementById("onboarding-card")?.remove();
@@ -1157,17 +1195,139 @@ function renderOnboardingCard() {
   card.id = "onboarding-card";
   card.className = "card onboarding-card";
   card.innerHTML = `
-    <p class="outfit" style="font-size:16px;font-weight:700;margin-bottom:.75rem">
-      👋 Bienvenue ! Voici comment démarrer
+    <p class="outfit" style="font-size:16px;font-weight:700;margin-bottom:.5rem">
+      👋 Bienvenue ! Ton espace est encore vide, c'est normal.
     </p>
-    <ol class="onboarding-steps">
-      <li><span>1</span> Ajoute ton premier client avec le bouton <strong>"+ Ajouter un client"</strong> plus bas</li>
-      <li><span>2</span> Crée un devis pour ce client et envoie-le lui</li>
-      <li><span>3</span> Une fois signé, transforme-le en facture</li>
-      <li><span>4</span> Profite de tes 14 jours d'essai gratuit, puis choisis un plan pour continuer</li>
-    </ol>
+    <p style="color:var(--muted);font-size:14px;margin-bottom:1rem">
+      Suis le tuto guidé (30 secondes) pour découvrir où tout se trouve.
+    </p>
+    <button class="btn-primary" onclick="startTutorial()">🎬 Lancer le tuto interactif</button>
   `;
   header.after(card);
+
+  // Lance automatiquement le tuto la toute première fois que ce
+  // navigateur voit le dashboard (une seule fois, jamais réaffiché après).
+  if (!localStorage.getItem("agenceauto_tutorial_done")) {
+    setTimeout(() => startTutorial(), 600);
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   TUTO INTERACTIF — met en surbrillance les vrais boutons de l'appli,
+   un par un, comme un tutoriel de jeu vidéo (spotlight + bulle d'aide).
+═══════════════════════════════════════════════════════════════════════ */
+
+const TUTORIAL_STEPS = [
+  {
+    selector: '[data-tab="tab-home"]',
+    title: "Ton tableau de bord",
+    text: "Ici tu retrouves un résumé de ton activité : revenus, devis, clients actifs.",
+  },
+  {
+    selector: '.quick-action[onclick*="client"]',
+    title: "1. Ajoute ton premier client",
+    text: "Clique ici pour enregistrer les infos d'un client : nom, contact, email.",
+  },
+  {
+    selector: '.quick-action[onclick*="quote"]',
+    title: "2. Crée un devis",
+    text: "Une fois ton client ajouté, génère-lui un devis en quelques secondes.",
+  },
+  {
+    selector: '[data-tab="tab-invoices"]',
+    title: "3. Suis tes factures",
+    text: "Quand un devis est signé, transforme-le en facture et suis les paiements ici.",
+  },
+  {
+    selector: '#trial-banner .trial-banner-btn, [data-tab="tab-settings"]',
+    title: "4. Ton abonnement",
+    text: "Tu as 14 jours gratuits. Passe à un plan payant ici quand tu es prêt à continuer.",
+  },
+];
+
+let tutorialStepIndex = 0;
+
+function startTutorial() {
+  tutorialStepIndex = 0;
+  document.getElementById("onboarding-card")?.remove();
+  showTutorialStep();
+}
+
+function showTutorialStep() {
+  removeTutorialUI();
+
+  // Cherche le premier sélecteur du pas actuel qui existe réellement dans le DOM
+  const step = TUTORIAL_STEPS[tutorialStepIndex];
+  if (!step) { endTutorial(); return; }
+
+  const target = document.querySelector(step.selector);
+  if (!target) {
+    // L'élément n'est pas visible sur cet onglet : on passe au pas suivant
+    tutorialStepIndex++;
+    showTutorialStep();
+    return;
+  }
+
+  const rect = target.getBoundingClientRect();
+  const pad = 8;
+
+  // Overlay sombre avec un "trou" lumineux exactement sur l'élément ciblé
+  const overlay = document.createElement("div");
+  overlay.id = "tutorial-overlay";
+  overlay.className = "tutorial-overlay";
+  document.body.appendChild(overlay);
+
+  const spot = document.createElement("div");
+  spot.id = "tutorial-spotlight";
+  spot.className = "tutorial-spotlight";
+  spot.style.top    = `${rect.top - pad}px`;
+  spot.style.left   = `${rect.left - pad}px`;
+  spot.style.width  = `${rect.width + pad * 2}px`;
+  spot.style.height = `${rect.height + pad * 2}px`;
+  document.body.appendChild(spot);
+
+  // Bulle d'aide, positionnée sous l'élément (ou au-dessus s'il n'y a pas la place)
+  const tooltip = document.createElement("div");
+  tooltip.id = "tutorial-tooltip";
+  tooltip.className = "tutorial-tooltip";
+  const spaceBelow = window.innerHeight - rect.bottom;
+  const placeAbove = spaceBelow < 180;
+  tooltip.style.top  = placeAbove ? `${rect.top - 12}px`    : `${rect.bottom + 16}px`;
+  tooltip.style.left = `${Math.min(Math.max(rect.left, 16), window.innerWidth - 340)}px`;
+  if (placeAbove) tooltip.style.transform = "translateY(-100%)";
+
+  tooltip.innerHTML = `
+    <p class="tutorial-step-count">Étape ${tutorialStepIndex + 1} / ${TUTORIAL_STEPS.length}</p>
+    <p class="outfit tutorial-title">${step.title}</p>
+    <p class="tutorial-text">${step.text}</p>
+    <div class="tutorial-actions">
+      <button class="tutorial-skip" onclick="endTutorial()">Passer</button>
+      <button class="tutorial-next" onclick="nextTutorialStep()">
+        ${tutorialStepIndex === TUTORIAL_STEPS.length - 1 ? "Terminer ✓" : "Suivant →"}
+      </button>
+    </div>
+  `;
+  document.body.appendChild(tooltip);
+
+  target.scrollIntoView({ block: "center", behavior: "smooth" });
+}
+
+function nextTutorialStep() {
+  tutorialStepIndex++;
+  showTutorialStep();
+}
+
+function endTutorial() {
+  removeTutorialUI();
+  localStorage.setItem("agenceauto_tutorial_done", "1");
+  showToast("Tuto terminé ! Tu es prêt à gérer ton agence 🚀", "success");
+}
+
+function removeTutorialUI() {
+  document.getElementById("tutorial-overlay")?.remove();
+  document.getElementById("tutorial-spotlight")?.remove();
+  document.getElementById("tutorial-tooltip")?.remove();
 }
 
 
@@ -1581,6 +1741,7 @@ function switchTab(clickedBtn) {
 
   // Actions spécifiques par onglet
   if (tabId === "tab-settings") loadSettingsForm();
+  if (tabId === "tab-reports")  renderReports();
 }
 
 /**
