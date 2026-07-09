@@ -288,6 +288,79 @@ img    { max-width: 100%; }
 
 
 /* ═══════════════════════════════════════════════════════════════════════
+   BANNIÈRE D'ESSAI GRATUIT
+═══════════════════════════════════════════════════════════════════════ */
+.trial-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  background: rgba(247,185,85,.12);
+  border: 1px solid rgba(247,185,85,.35);
+  color: var(--text);
+  border-radius: var(--radius-md);
+  padding: 12px 18px;
+  margin-bottom: 1.5rem;
+  font-size: 14px;
+}
+.trial-banner strong { color: var(--amber); }
+.trial-banner-btn {
+  background: var(--amber);
+  color: #070A12;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  transition: all var(--transition);
+}
+.trial-banner-btn:hover { filter: brightness(1.08); }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   PAYWALL — Bloque le dashboard quand l'essai est terminé / paiement KO
+═══════════════════════════════════════════════════════════════════════ */
+.paywall-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  background: rgba(7,10,18,.92);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  animation: fadeIn .2s ease;
+}
+.paywall-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 2.5rem;
+  max-width: 460px;
+  width: 100%;
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+}
+.paywall-icon { font-size: 40px; margin-bottom: 1rem; }
+.paywall-card h2 { font-size: 20px; margin-bottom: .5rem; }
+.paywall-card p { color: var(--muted); font-size: 14px; margin-bottom: 1.5rem; }
+.paywall-plans {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 1.5rem;
+}
+.paywall-logout {
+  color: var(--muted);
+  font-size: 13px;
+  text-decoration: underline;
+}
+.paywall-logout:hover { color: var(--text); }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
    5. NAVIGATION PRINCIPALE (landing)
 ═══════════════════════════════════════════════════════════════════════ */
 .nav {
