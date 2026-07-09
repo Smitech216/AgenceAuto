@@ -361,6 +361,42 @@ img    { max-width: 100%; }
 
 
 /* ═══════════════════════════════════════════════════════════════════════
+   CARTE D'ONBOARDING — compte tout neuf (0 client, 0 devis)
+═══════════════════════════════════════════════════════════════════════ */
+.onboarding-card {
+  background: linear-gradient(135deg, rgba(79,110,247,.08), rgba(14,207,164,.05));
+  border: 1px solid rgba(79,110,247,.25);
+  margin-bottom: 1.5rem;
+}
+.onboarding-steps {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.onboarding-steps li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  color: var(--text);
+}
+.onboarding-steps li span {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════
    5. NAVIGATION PRINCIPALE (landing)
 ═══════════════════════════════════════════════════════════════════════ */
 .nav {
