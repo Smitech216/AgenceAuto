@@ -64,15 +64,15 @@ const STRIPE_PUBLIC_KEY = "pk_test_51Tol4C9AI6nFEqZd1nS0xi5dtb9Q5px1BviBoaXE5FoH
   ───────────────────────────────────────────────────────────────────────
 */
 const STRIPE_PRICES = {
-  solo:   "price_COLLE_TON_PRICE_ID_SOLO",
-  agence: "price_COLLE_TON_PRICE_ID_AGENCE",
-  studio: "price_COLLE_TON_PRICE_ID_STUDIO",
+  solo:   "prod_Ur9dB8VjeDtZBq",
+  agence: "prod_Ur9dX22cPLm27f",
+  studio: "prod_Ur9eYfyGVycxek",
 };
 
 // Initialisation Stripe
 let stripe = null;
 try {
-  if (STRIPE_PUBLIC_KEY !== "COLLE_TA_CLE_STRIPE_ICI") {
+  if (STRIPE_PUBLIC_KEY !== "pk_test_51Tol4C9AI6nFEqZd1nS0xi5dtb9Q5px1BviBoaXE5FoHkCYIWtqkKJBoh34Dgi2HSyM4gvexfO5O9yYtrRGg5cGY00vZDvW1B0") {
     stripe = Stripe(STRIPE_PUBLIC_KEY);
     console.log("✅ Stripe initialisé");
   } else {
@@ -1401,7 +1401,7 @@ async function openStripePortal() {
   try {
     showToast("Redirection vers le portail d'abonnement…", "success");
     // Appelle la Edge Function Supabase qui crée une session portail Stripe
-    const { data, error } = await supabase.functions.invoke("stripe-portal", {
+    const { data, error } = await supabase.functions.invoke("pk_test_51Tol4C9AI6nFEqZd1nS0xi5dtb9Q5px1BviBoaXE5FoHkCYIWtqkKJBoh34Dgi2HSyM4gvexfO5O9yYtrRGg5cGY00vZDvW1B0", {
       body: { userId: currentUser.id }
       // ← Cette Edge Function est à créer dans Supabase → Edge Functions
     });
