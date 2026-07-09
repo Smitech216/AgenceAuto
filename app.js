@@ -1023,13 +1023,151 @@ function updateDashboardStats() {
   // Clients actifs
   const activeClients = appData.clients.filter(c => c.status === "Actif").length;
   // Met à jour le DOM
+  // ⚠️ Piège corrigé ici : "0 || '28'" retombe sur '28' car 0 est "falsy" en JS.
+  // Un compte neuf avec 0 devis affichait donc "28" au lieu du vrai "0".
+  // On affiche maintenant toujours la vraie valeur calculée, jamais un fallback démo.
   const setEl = (id, val) => { const el = document.getElementById(id);
   if (el) el.textContent = val; };
-  setEl("stat-revenue", formatEur(monthRevenue) || "14 820 €");
-  // Fallback démo
-  setEl("stat-quotes",  appData.quotes.length   || "28");
-  setEl("stat-clients", activeClients           || "47");
-  setEl("stat-sign",    `${rate}%`              || "91%");
+  setEl("stat-revenue", formatEur(monthRevenue));
+  setEl("stat-quotes",  appData.quotes.length);
+  setEl("stat-clients", activeClients);
+  setEl("stat-sign",    `${rate}%`);
+
+  // Remplace le fil d'activité et le graphique statiques par les vraies données,
+  // et affiche un petit tuto si le compte est tout neuf (0 client, 0 devis).
+  renderActivityFeed();
+  renderRevenueChart();
+  renderOnboardingCard();
+}
+
+/**
+ * Remplace le fil "Activité récente" (codé en dur dans le HTML à l'origine)
+ * par les vrais événements du compte : devis signés, factures payées.
+ * Sur un compte neuf, affiche un message d'accueil au lieu de fausses activités.
+ */
+function renderActivityFeed() {
+  const feed = document.getElementById("activity-feed");
+  if (!feed) return;
+
+  // Mode démo pur (Supabase non configuré) : on garde les exemples du HTML
+  if (!supabase || currentUser?.id === "demo-user") return;
+
+  const events = [];
+  appData.quotes.forEach(q => {
+    if (q.status === "Signé") {
+      events.push({
+        date:  q.signed_at || q.created_at,
+        text:  `Devis ${q.id || q.reference || ""} signé · ${q.client_name || ""}`,
+        color: "mint",
+      });
+    }
+  });
+  appData.invoices.forEach(inv => {
+    if (inv.status === "Payée" && inv.paid_at) {
+      events.push({
+        date:  inv.paid_at,
+        text:  `Facture payée — ${formatEur(inv.amount)}`,
+        color: "accent",
+      });
+    }
+  });
+  events.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  if (events.length === 0) {
+    feed.innerHTML = `
+      <div style="text-align:center;padding:2rem 1rem;color:var(--muted);font-size:13px;line-height:1.6">
+        Aucune activité pour l'instant.<br/>
+        Ajoute ton premier client pour commencer 🚀
+      </div>`;
+    return;
+  }
+
+  feed.innerHTML = events.slice(0, 5).map(e => `
+    <div class="activity-item">
+      <div class="activity-dot ${e.color}"></div>
+      <div class="activity-text">
+        <p>${escapeHtml(e.text)}</p>
+        <span>${formatDate(e.date)}</span>
+      </div>
+    </div>
+  `).join("");
+}
+
+/**
+ * Remplace le graphique "Revenus mensuels" (barres codées en dur à l'origine)
+ * par les vrais totaux encaissés des 6 derniers mois. Sur un compte neuf,
+ * affiche un message au lieu de fausses barres.
+ */
+function renderRevenueChart() {
+  const chart = document.querySelector(".bar-chart-main");
+  if (!chart) return;
+
+  // Mode démo pur : on garde les barres d'exemple du HTML
+  if (!supabase || currentUser?.id === "demo-user") return;
+
+  const now = new Date();
+  const months = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push({ label: d.toLocaleDateString("fr-FR", { month: "short" }), m: d.getMonth(), y: d.getFullYear(), total: 0 });
+  }
+
+  appData.invoices.forEach(inv => {
+    if (inv.status === "Payée" && inv.paid_at) {
+      const d = new Date(inv.paid_at);
+      const bucket = months.find(x => x.m === d.getMonth() && x.y === d.getFullYear());
+      if (bucket) bucket.total += Number(inv.amount);
+    }
+  });
+
+  const hasData = months.some(x => x.total > 0);
+  if (!hasData) {
+    chart.innerHTML = `
+      <div style="width:100%;text-align:center;color:var(--muted);font-size:13px;padding:2rem 0">
+        Pas encore de revenus enregistrés.<br/>Ce graphique se remplira avec tes premières factures payées.
+      </div>`;
+    return;
+  }
+
+  const max = Math.max(...months.map(x => x.total), 1);
+  chart.innerHTML = months.map((x, i) => `
+    <div class="bar-wrap">
+      <div class="bar-fill ${i === months.length - 1 ? "bar-fill-active" : ""}"
+           style="height:${Math.max(6, Math.round((x.total / max) * 100))}%"></div>
+      <span>${x.label}</span>
+    </div>
+  `).join("");
+}
+
+/**
+ * Affiche une petite carte "Bienvenue, voici comment démarrer" tant que le
+ * compte est tout neuf (0 client ET 0 devis). Disparaît dès que la personne
+ * a commencé à utiliser l'app pour de vrai.
+ */
+function renderOnboardingCard() {
+  document.getElementById("onboarding-card")?.remove();
+
+  if (!supabase || currentUser?.id === "demo-user") return;
+  if (appData.clients.length > 0 || appData.quotes.length > 0) return;
+
+  const header = document.querySelector("#tab-home .tab-header");
+  if (!header) return;
+
+  const card = document.createElement("div");
+  card.id = "onboarding-card";
+  card.className = "card onboarding-card";
+  card.innerHTML = `
+    <p class="outfit" style="font-size:16px;font-weight:700;margin-bottom:.75rem">
+      👋 Bienvenue ! Voici comment démarrer
+    </p>
+    <ol class="onboarding-steps">
+      <li><span>1</span> Ajoute ton premier client avec le bouton <strong>"+ Ajouter un client"</strong> plus bas</li>
+      <li><span>2</span> Crée un devis pour ce client et envoie-le lui</li>
+      <li><span>3</span> Une fois signé, transforme-le en facture</li>
+      <li><span>4</span> Profite de tes 14 jours d'essai gratuit, puis choisis un plan pour continuer</li>
+    </ol>
+  `;
+  header.after(card);
 }
 
 
