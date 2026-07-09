@@ -82,6 +82,12 @@ try {
   console.error("Erreur Stripe :", e.message);
 }
 
+// ── ACCÈS / ESSAI GRATUIT ──────────────────────────────────────────────
+// Durée de l'essai gratuit annoncée sur la landing page ("14 jours gratuits")
+// Après ce délai, si l'abonnement n'est pas "active", l'accès au dashboard
+// est bloqué par un paywall (voir applyAccessGate()).
+const TRIAL_DAYS = 14;
+
 
 /* ═══════════════════════════════════════════════════════════════════════
    3. ÉTAT DE L'APPLICATION
@@ -158,6 +164,8 @@ function showPage(pageName) {
     switchTabById("tab-home");
     // Charge les données depuis Supabase (ou garde les démos)
     loadAllData();
+    // Vérifie l'essai gratuit / l'abonnement et bloque l'accès si besoin
+    applyAccessGate();
   }
 
   // Remonte en haut de la page
@@ -166,6 +174,114 @@ function showPage(pageName) {
 
 // 🚀 LA LIGNE À AJOUTER : Rend la fonction visible pour tes boutons HTML
 window.showPage = showPage;
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   4bis. ACCÈS / ESSAI GRATUIT / PAYWALL
+
+   C'est ici que se joue "est-ce que cette personne a le droit d'utiliser
+   l'appli, ou doit-elle payer ?"
+
+   Règles :
+   ─────────
+   · Mode démo pur (Supabase pas configuré, currentUser.id === "demo-user")
+     → accès total, aucune restriction (c'est juste une vitrine).
+   · subscription_status === "active" (Stripe a confirmé un paiement)
+     → accès total.
+   · subscription_status === "trial" ET on est encore dans les 14 jours
+     → accès total + bannière "il te reste X jours".
+   · Sinon (essai terminé, "past_due", "canceled"...)
+     → paywall bloquant : le dashboard reste visible en fond mais
+       inutilisable tant que la personne n'a pas choisi un plan.
+═══════════════════════════════════════════════════════════════════════ */
+
+function applyAccessGate() {
+  // On repart toujours d'un état propre avant de recalculer l'accès
+  removeTrialBanner();
+  removePaywall();
+
+  // Mode démo pur : Supabase non configuré → on ne bloque jamais rien
+  if (!supabase || currentUser?.id === "demo-user") return;
+
+  const status = currentUser?.subscriptionStatus || "trial";
+
+  // Abonnement payant actif → accès complet, rien à afficher
+  if (status === "active") return;
+
+  // Calcule la fin de la période d'essai (14 jours après la création du compte)
+  const created  = currentUser?.createdAt ? new Date(currentUser.createdAt) : new Date();
+  const trialEnd = new Date(created.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
+  const msLeft   = trialEnd.getTime() - Date.now();
+  const daysLeft = Math.max(0, Math.ceil(msLeft / (24 * 60 * 60 * 1000)));
+
+  if (status === "trial" && msLeft > 0) {
+    showTrialBanner(daysLeft);
+    return;
+  }
+
+  // Essai terminé, ou abonnement en échec/résilié → on bloque l'accès
+  showPaywall(status);
+}
+
+/**
+ * Affiche une bannière discrète en haut du dashboard pendant l'essai gratuit.
+ */
+function showTrialBanner(daysLeft) {
+  const content = document.getElementById("dashboard-content");
+  if (!content) return;
+
+  const banner = document.createElement("div");
+  banner.id = "trial-banner";
+  banner.className = "trial-banner";
+  banner.innerHTML = `
+    <span>⏳ Il te reste <strong>${daysLeft} jour${daysLeft > 1 ? "s" : ""}</strong> d'essai gratuit.</span>
+    <button class="trial-banner-btn" onclick="handleSubscribe(currentUser?.plan || 'agence')">
+      Passer à un plan payant →
+    </button>
+  `;
+  content.prepend(banner);
+}
+
+function removeTrialBanner() {
+  document.getElementById("trial-banner")?.remove();
+}
+
+/**
+ * Affiche un paywall bloquant par-dessus le dashboard : la personne ne peut
+ * plus rien faire tant qu'elle n'a pas choisi un plan (ou ne s'est pas déconnectée).
+ */
+function showPaywall(status) {
+  if (document.getElementById("paywall-overlay")) return; // déjà affiché
+
+  const messages = {
+    trial:     "Ton essai gratuit de 14 jours est terminé.",
+    past_due:  "Ton dernier paiement a échoué.",
+    canceled:  "Ton abonnement a été résilié.",
+  };
+  const message = messages[status] || "Choisis un plan pour continuer à utiliser AgenceAuto.";
+
+  const overlay = document.createElement("div");
+  overlay.id = "paywall-overlay";
+  overlay.className = "paywall-overlay";
+  overlay.innerHTML = `
+    <div class="paywall-card">
+      <div class="paywall-icon">🔒</div>
+      <h2 class="outfit">${message}</h2>
+      <p>Choisis un plan ci-dessous pour retrouver l'accès à tes clients, devis et factures.</p>
+      <div class="paywall-plans">
+        <button class="btn-plan-ghost" onclick="handleSubscribe('solo')">Solo — 29€/mois</button>
+        <button class="btn-plan-primary" onclick="handleSubscribe('agence')">Agence — 79€/mois</button>
+        <button class="btn-plan-ghost" onclick="handleSubscribe('studio')">Studio — 199€/mois</button>
+      </div>
+      <button class="paywall-logout" onclick="handleLogout()">Se déconnecter</button>
+    </div>
+  `;
+  document.getElementById("page-dashboard")?.appendChild(overlay);
+}
+
+function removePaywall() {
+  document.getElementById("paywall-overlay")?.remove();
+}
 
 /* ═══════════════════════════════════════════════════════════════════════
    5. AUTHENTIFICATION
@@ -253,6 +369,9 @@ async function handleLogin() {
       name:  profile?.name  || email.split("@")[0],
       email: profile?.email || email,
       plan:  profile?.plan  || "solo",
+      // ── Infos d'abonnement, utilisées par applyAccessGate() ──────
+      subscriptionStatus: profile?.subscription_status || "trial",
+      createdAt: profile?.created_at || data.user.created_at,
     };
 
     showToast("Connexion réussie !", "success");
@@ -324,13 +443,22 @@ async function handleRegister() {
     }
 
     if (data.user) {
-      // Met à jour le profil avec le plan choisi
-      await supabase
+      // Met à jour le profil avec le plan choisi, et récupère la ligne
+      // pour connaître son subscription_status et sa date de création réels
+      const { data: profileRow } = await supabase
         .from("profiles")
-        .upsert({ id: data.user.id, email, name, plan });
+        .upsert({ id: data.user.id, email, name, plan })
+        .select()
+        .single();
 
-      currentUser = { id: data.user.id, name, email, plan };
-      showToast("Compte créé ! Bienvenue 🎉", "success");
+      currentUser = {
+        id: data.user.id,
+        name, email, plan,
+        // ── Infos d'abonnement, utilisées par applyAccessGate() ──────
+        subscriptionStatus: profileRow?.subscription_status || "trial",
+        createdAt: profileRow?.created_at || new Date().toISOString(),
+      };
+      showToast("Compte créé ! Bienvenue 🎉 Profitez de vos 14 jours d'essai gratuit.", "success");
       showPage("dashboard");
       return; 
     }
@@ -354,6 +482,8 @@ async function handleLogout() {
   }
   // Réinitialise l'état local
   currentUser = null;
+  removePaywall();
+  removeTrialBanner();
   showPage("landing");
   showToast("Vous êtes déconnecté.", "success");
 }
@@ -420,6 +550,9 @@ async function checkExistingSession() {
         name:  profile?.name  || session.user.email.split("@")[0],
         email: profile?.email || session.user.email,
         plan:  profile?.plan  || "solo",
+        // ── Infos d'abonnement, utilisées par applyAccessGate() ──────
+        subscriptionStatus: profile?.subscription_status || "trial",
+        createdAt: profile?.created_at || session.user.created_at,
       };
       showPage("dashboard");
     }
@@ -983,15 +1116,44 @@ async function openStripePortal() {
 }
 
 /**
- * Gère le clic sur les abonnements depuis la landing page.
- * Si Stripe est configuré → redirige vers Stripe Checkout
- * Sinon → redirige vers l'inscription
+ * Gère le clic sur un plan (depuis la landing page, la bannière d'essai,
+ * ou le paywall qui bloque le dashboard).
+ *
+ * ⚠️ IMPORTANT — ancien bug corrigé ici :
+ * Avant, la moindre erreur Stripe (Edge Function pas encore déployée,
+ * Price ID encore en placeholder…) renvoyait la personne vers la page
+ * d'inscription. Comme handleRegister() ne demande jamais de carte,
+ * n'importe qui pouvait donc créer un compte gratuit illimité en
+ * cliquant "S'abonner" puis en laissant l'erreur se produire.
+ * Résultat : personne ne payait jamais, tout le monde restait en accès
+ * complet "gratuit à vie" sans le savoir.
+ *
+ * Maintenant : si la personne n'est PAS connectée (clic depuis la landing
+ * page publique) → on l'envoie s'inscrire normalement, c'est voulu.
+ * Si la personne EST déjà connectée (clic depuis la bannière d'essai ou
+ * le paywall) → on ne la renvoie JAMAIS vers l'inscription gratuite,
+ * on affiche l'erreur telle quelle pour que le vrai problème (Stripe pas
+ * configuré) soit visible et corrigé, au lieu d'être contourné.
  */
 async function handleSubscribe(plan) {
   if (!stripe) {
-    // Stripe non configuré → redirige vers l'inscription
+    if (currentUser) {
+      showToast(
+        "Le paiement n'est pas encore activé sur ce site (ÉTAPE 2 du guide de déploiement : clé Stripe et Price ID à configurer).",
+        "error"
+      );
+    } else {
+      // Clic depuis la landing page publique, personne connecté : parcours normal → inscription
+      showPage("register");
+      const planEl = document.getElementById("reg-plan");
+      if (planEl) planEl.value = plan;
+    }
+    return;
+  }
+
+  if (!currentUser) {
+    // Pas encore de compte : on inscrit d'abord, le paiement viendra juste après
     showPage("register");
-    // Pré-sélectionne le bon plan
     const planEl = document.getElementById("reg-plan");
     if (planEl) planEl.value = plan;
     return;
@@ -1008,8 +1170,7 @@ async function handleSubscribe(plan) {
         userId:    currentUser?.id,
         userEmail: currentUser?.email,
         // ← URLs de retour après paiement
-       
-         successUrl: `${window.location.origin}?payment=success`,
+        successUrl: `${window.location.origin}?payment=success`,
         cancelUrl:  `${window.location.origin}?payment=cancel`,
       }
     });
@@ -1018,8 +1179,10 @@ async function handleSubscribe(plan) {
     // Redirige vers la page de paiement Stripe
     await stripe.redirectToCheckout({ sessionId: data.sessionId });
   } catch (err) {
+    // Erreur réelle (Edge Function absente, Price ID invalide…) :
+    // on l'affiche clairement, on NE renvoie PLUS vers l'inscription gratuite.
     showToast("Erreur paiement : " + err.message, "error");
-    showPage("register");
+    console.error("Erreur Stripe Checkout :", err);
   }
 }
 
@@ -1571,6 +1734,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             name:  profile?.name  || session.user.email.split("@")[0],
             email: profile?.email || session.user.email,
             plan:  profile?.plan  || "solo",
+            // ── Infos d'abonnement, utilisées par applyAccessGate() ──────
+            subscriptionStatus: profile?.subscription_status || "trial",
+            createdAt: profile?.created_at || session.user.created_at,
           };
           showPage("dashboard");
           showToast("Connexion réussie !", "success");
@@ -1582,9 +1748,21 @@ document.addEventListener("DOMContentLoaded", async () => {
   // ── 5. Gère les paramètres URL après paiement Stripe ─────────────
   const params = new URLSearchParams(window.location.search);
   if (params.get("payment") === "success") {
-    showToast("Paiement réussi ! Bienvenue sur AgenceAuto 🎉", "success");
-    // Nettoie l'URL
     window.history.replaceState({}, "", window.location.pathname);
+
+    // Le webhook Stripe met à jour subscription_status="active" en base,
+    // mais currentUser en mémoire ne le sait pas encore : on re-fetch le
+    // profil avant de relever le paywall, sinon il resterait affiché
+    // malgré le paiement réussi.
+    if (supabase && currentUser?.id) {
+      const freshProfile = await fetchProfile(currentUser.id);
+      if (freshProfile) {
+        currentUser.subscriptionStatus = freshProfile.subscription_status;
+        currentUser.plan = freshProfile.plan || currentUser.plan;
+      }
+    }
+    showToast("Paiement réussi ! Bienvenue sur AgenceAuto 🎉", "success");
+    applyAccessGate();
   }
   if (params.get("payment") === "cancel") {
     showToast("Paiement annulé.", "error");
