@@ -397,6 +397,75 @@ img    { max-width: 100%; }
 
 
 /* ═══════════════════════════════════════════════════════════════════════
+   TUTO INTERACTIF — overlay + spotlight + bulle d'aide (style jeu vidéo)
+═══════════════════════════════════════════════════════════════════════ */
+.tutorial-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: transparent; /* le fond sombre vient du box-shadow du spotlight */
+}
+
+.tutorial-spotlight {
+  position: fixed;
+  z-index: 1001;
+  border-radius: 10px;
+  pointer-events: none;
+  /* Le spread énorme (9999px) crée l'effet "trou de lumière" :
+     tout l'écran s'assombrit SAUF la zone du spotlight elle-même. */
+  box-shadow:
+    0 0 0 9999px rgba(7,10,18,.85),
+    0 0 0 2px var(--accent),
+    0 0 30px rgba(79,110,247,.55);
+  transition: all .3s ease;
+}
+
+.tutorial-tooltip {
+  position: fixed;
+  z-index: 1002;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.5rem;
+  width: 320px;
+  max-width: calc(100vw - 32px);
+  box-shadow: var(--shadow-lg);
+  animation: slideUp .25s ease;
+}
+.tutorial-step-count {
+  font-size: 11px;
+  color: var(--accent);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-bottom: 6px;
+}
+.tutorial-title  { font-size: 15px; margin-bottom: 6px; }
+.tutorial-text   { font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 1.1rem; }
+.tutorial-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.tutorial-skip {
+  font-size: 13px;
+  color: var(--muted);
+  text-decoration: underline;
+}
+.tutorial-skip:hover { color: var(--text); }
+.tutorial-next {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 9px 18px;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition);
+}
+.tutorial-next:hover { background: var(--accent-h); }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
    5. NAVIGATION PRINCIPALE (landing)
 ═══════════════════════════════════════════════════════════════════════ */
 .nav {
