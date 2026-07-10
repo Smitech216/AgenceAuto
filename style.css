@@ -1921,3 +1921,80 @@ select.form-input { cursor: pointer; }
   animation: spin .65s linear infinite;
   display: inline-block;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SYSTÈME D'ICÔNES — remplace les emojis par des icônes ligne cohérentes
+═══════════════════════════════════════════════════════════════════════ */
+.feature-icon svg,
+.stat-icon svg,
+.qa-icon svg {
+  width: 22px;
+  height: 22px;
+}
+.nav-icon svg { width: 18px; height: 18px; }
+
+/* Couleur de l'icône = couleur du fond de sa pastille (même logique de teinte) */
+.feature-icon[style*="79,110,247"] svg,
+.stat-icon[style*="79,110,247"]    svg { color: var(--accent); }
+.feature-icon[style*="14,207,164"] svg,
+.stat-icon[style*="14,207,164"]    svg { color: var(--mint); }
+.feature-icon[style*="247,185,85"] svg,
+.stat-icon[style*="247,185,85"]    svg { color: var(--amber); }
+.feature-icon[style*="167,139,250"] svg,
+.stat-icon[style*="167,139,250"]    svg { color: #A78BFA; }
+
+.qa-icon.accent-bg svg { color: var(--accent); }
+.qa-icon.mint-bg   svg { color: var(--mint); }
+.qa-icon.amber-bg  svg { color: var(--amber); }
+.qa-icon.muted-bg  svg { color: var(--muted); }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   PAGES STATIQUES — Changelog, Roadmap, Légal, Support
+═══════════════════════════════════════════════════════════════════════ */
+.static-page { padding: 7rem 1.5rem 4rem; max-width: 720px; margin: 0 auto; }
+.static-page-inner { display: flex; flex-direction: column; gap: .5rem; }
+.static-title   { font-size: 34px; margin-bottom: .5rem; }
+.static-updated { color: var(--muted); font-size: 13px; margin-bottom: 1.5rem; }
+.static-intro   { color: var(--muted); font-size: 15px; line-height: 1.7; margin-bottom: 1.5rem; }
+.static-note    { color: var(--muted); font-size: 13px; margin-top: .5rem; }
+.static-warning {
+  background: rgba(247,185,85,.1);
+  border: 1px solid rgba(247,185,85,.3);
+  color: var(--text);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  font-size: 13px;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+.static-page h3 { font-size: 17px; margin: 1.75rem 0 .5rem; }
+.static-page p, .static-page li { color: var(--muted); font-size: 14px; line-height: 1.7; }
+.static-page a { color: var(--accent); }
+.static-page ul { padding-left: 1.2rem; margin-bottom: 1rem; }
+
+.changelog-entry { border-top: 1px solid var(--border); padding: 1.5rem 0; }
+.changelog-date  { color: var(--accent); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; margin-bottom: .4rem; }
+
+.roadmap-list { display: flex; flex-direction: column; gap: 1rem; margin-top: 1.5rem; }
+.roadmap-item { display: flex; gap: 1rem; align-items: flex-start; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1.1rem 1.3rem; }
+.roadmap-item h3 { margin: 0 0 .3rem; font-size: 15px; }
+.roadmap-item p  { margin: 0; }
+
+.rights-list { display: flex; flex-direction: column; gap: .6rem; margin: 1rem 0 1.5rem; padding-left: 0; list-style: none; }
+.rights-list li { color: var(--text); }
+.rights-list strong { color: var(--text); }
+
+.doc-section { border-top: 1px solid var(--border); padding: 1.3rem 0; }
+.doc-section h3 { margin-top: 0; }
+
+.status-list { display: flex; flex-direction: column; gap: .7rem; margin: 1.5rem 0; }
+.status-row { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px 16px; }
+.status-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.status-dot.mint  { background: var(--mint); }
+.status-dot.amber { background: var(--amber); }
+.status-label { margin-left: auto; color: var(--muted); font-size: 13px; }
+
+.contact-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 2rem; text-align: center; margin-top: 1.5rem; }
+.contact-email { font-size: 22px; margin-bottom: .5rem; }
